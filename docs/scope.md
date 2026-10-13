@@ -1,22 +1,31 @@
 # Scope and evidence boundaries
 
-## Documented state
+## Public executable boundary
 
-Staging proof of concept; no production launch or app-marketplace approval is claimed.
+This repository now includes newly written, synthetic Node.js code that demonstrates one narrow backend service boundary. Its records, people-like subjects, tenants and addresses are invented for the demo. It contains no client source, location dataset, merchant identity, domain, credential, platform key, deployment binding or private configuration.
 
-## Evidence basis
+The executable is a dependency-free in-memory model. It does not connect to Shopify, Cloudflare, D1, an MCP host, a map provider or any network service. There is no browser interface or server because the review target is authorization and state behavior.
 
-The private implementation includes integration tests for API and MCP mutation workflows, signed storefront visibility, audit attribution and uninstall behavior, plus extension structure and locator tests.
+## Relationship to the private proof of concept
 
-The public narrative was prepared against retained implementation and verification artifacts. Those private references are not redistributed. Source inspection, recorded test results, staging observations and production deployment are different levels of evidence; none is silently substituted for another.
+A separate private staging proof of concept informed the choice of engineering problem. This public demo was authored independently and is not a source release, port or sanitized copy of that implementation. No production launch, app-marketplace approval or current deployment is claimed.
 
-## Not claimed or distributed
+## Demonstrated here
 
-- Live migration, merchant configuration and production operations are outside the documented POC boundary.
-- No location dataset, account identifiers, application configuration or original service code is published.
+- Tenant-scoped record authority and exact input contracts.
+- Trusted-principal and role checks at a service boundary.
+- Versioned updates and stale-write refusal.
+- Bound, expiring, single-use soft-deactivation confirmation.
+- Public active-only projections and minimal audit entries.
+- Deterministic behavioral tests, including failure-state invariants.
 
-## Public repository boundary
+## Explicitly not implemented or claimed
 
-Only newly written technical documentation and illustrative diagrams are included. There are no original application source files, datasets, screenshots, deployment scripts, credentials or inherited Git history. No business-performance figures or customer endorsements are asserted.
+- Authentication, OAuth, session validation or Shopify signature verification.
+- Shopify app proxy, Admin API, theme extension or uninstall handlers.
+- MCP protocol, tool registration or automation transport authentication.
+- SQL/D1 schemas, transactions, durable storage, distributed locks or compare-and-swap execution.
+- Map UI, geocoding, search ranking, stockist creation, reactivation or hard deletion.
+- Production security review, penetration testing, operational monitoring or compliance suitability.
 
-The repository is intended for technical review of the engineering approach. It makes no grant of rights to the original private implementation or third-party dependencies.
+The documentation maps the service contract to possible adapters only to make the boundary reviewable. It does not imply those adapters exist in this repository.

@@ -1,49 +1,57 @@
-# Shopify Stockist Platform POC
+# Stockist Service Boundary
 
-A stockist-management proof of concept exposing a shared data service through a storefront app proxy, embedded administrative API and separately authenticated MCP endpoint.
+This repository contains an original, dependency-free Node.js demonstration of the authorization and state-transition boundary behind a multi-tenant stockist directory.
 
-**Technical showcase · Documentation only · Anonymized**
+**Technical showcase · Executable synthetic demo · Anonymized**
 
-Shopify | Cloudflare Workers | Cloudflare D1 | JavaScript | MCP | Vitest | Leaflet
+The demo deliberately stays narrow: public active-stockist reads, trusted staff reads, role-gated updates, optimistic record versions and a bound two-step soft-deactivation. It is separate from the private staging proof of concept described in [Scope and evidence boundaries](docs/scope.md).
 
-## Engineering problem
+## Quick start
 
-Public visitors need simple read access, while administrative and automation clients need controlled mutations. Those entry points must share validation and auditing without sharing the same trust level.
+Requirements: Node.js 20 or newer. No package installation is required.
 
-## Implementation scope
-
-- Built a Worker and D1 service with signed app-proxy reads and separate administrative and MCP access paths.
-- Implemented role-aware mutation checks, input validation and optimistic version checks.
-- Added short-lived bound confirmation tokens, single-use deactivation confirmation and audit logging.
-- Implemented OAuth and uninstall handling, retaining soft-deactivation rather than hard-delete routes.
-- Created a theme app extension with searchable results, fallback handling and deferred map initialization and cleanup.
-
-## Architecture at a glance
-
-The following is an illustrative technical flow, not a client screenshot or a deployment topology.
-
-```mermaid
-flowchart TD
-    N0["Storefront / Admin / MCP"]
-    N1["Transport-specific authorization"]
-    N0 --> N1
-    N2["Shared validation and version checks"]
-    N1 --> N2
-    N3["D1 records and audit"]
-    N2 --> N3
-    N4["Locator results"]
-    N3 --> N4
+```sh
+node --test
+node demo/run.mjs
 ```
 
-## Evidence and delivery boundary
+The test command currently runs 15 deterministic tests. The demo prints a minimal public projection, a versioned edit, caught stale and cross-tenant failures, a successful deactivation, public exclusion, caught token replay and a minimal audit log. It never prints confirmation tokens.
 
-Staging proof of concept; no production launch or app-marketplace approval is claimed.
+## What the executable demonstrates
 
-The private implementation includes integration tests for API and MCP mutation workflows, signed storefront visibility, audit attribution and uninstall behavior, plus extension structure and locator tests.
+- Records are addressed by an unambiguous `(tenant, id)` tuple.
+- `publicList(tenant)` returns active records only and builds a dedicated minimal projection.
+- `staffGet(principal, id)` accepts viewer, editor or admin roles.
+- `update(principal, id, expectedVersion, patch)` accepts editors and admins, validates an exact patch shape and increments the version.
+- `prepareDeactivation(...)` and `confirmDeactivation(...)` require admin permission.
+- Confirmation state is private, random, short-lived, single-use, and bound to tenant, subject, action, record and prepared version.
+- Permission is checked again at confirmation time. A rejected unauthorized caller does not consume the valid token.
+- Snapshots, staff records and audit entries are defensive copies.
 
-## Read more
+## Code map
 
-- [Engineering decisions](docs/engineering.md)
-- [Scope and evidence boundaries](docs/scope.md)
+| Path | Purpose |
+| --- | --- |
+| `src/stockist-service.mjs` | In-memory service, validation, authorization, versions, confirmations and audit |
+| `test/stockist-service.test.mjs` | Deterministic behavioral and failure-invariant tests |
+| `demo/run.mjs` | Synthetic command-line walkthrough |
+| `docs/engineering.md` | Trust boundary, contracts, lifecycle, failure matrix and trade-offs |
+| `docs/scope.md` | Public/private and implementation boundaries |
 
-> This repository describes verified implementation work at a technical level. Original source, identities, business data and visual assets are intentionally omitted. It is not an installable application or a claim that the original private implementation is open source.
+## Trust boundary
+
+```mermaid
+flowchart LR
+    T["Unimplemented transport/auth adapter"] -->|"trusted principal"| S["Stockist service"]
+    U["Arbitrary caller JSON"] -. "must not enter directly" .-> S
+    S --> P["Public projection"]
+    S --> R["In-memory records"]
+    S --> C["Private confirmation registry"]
+    S --> A["Minimal audit"]
+```
+
+A principal is an explicit trusted output of a transport/authentication adapter. The `trusted: true` marker illustrates that contract; it does not authenticate arbitrary JSON. Real code must construct principals only after verifying a Shopify request, an authenticated admin session, or a separately authenticated automation channel. None of those adapters is implemented here.
+
+## Limits
+
+This is an in-memory mechanism demonstration, not production authentication, a security audit, a Shopify app, an MCP server, a database implementation or a deployed Worker. Each method performs synchronous atomic-looking steps in one JavaScript process. That does **not** provide database compare-and-swap, transactions, durability or cross-instance coordination. See [Engineering decisions](docs/engineering.md) for the persistence mapping.
